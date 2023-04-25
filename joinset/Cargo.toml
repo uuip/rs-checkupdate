@@ -1,0 +1,23 @@
+[package]
+name = "checkupdate-joinset"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sea-orm = { version = "^0", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
+serde_json ="*"
+
+reqwest = { version = "^0", features = ["blocking", "json"] }
+tokio = { version = "^1", features = ["full"] }
+
+enable-ansi-support = "0.2.1"
+mincolor = "2.0.1"
+
+anyhow = "^1"
+once_cell = "^1"
+
+regex = "^1"
+rule = { path = "../rule" }
+models = { path = "../models" }
