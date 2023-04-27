@@ -1,21 +1,14 @@
 #![allow(dead_code, unused_variables)]
 
 use mincolor::*;
-use once_cell::sync::Lazy;
-use regex::Regex;
-use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
-use reqwest::Client;
-use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
+use sea_orm::ActiveValue::Set;
 use serde_json::json;
 use tokio::task;
 
 use models::ver;
-use models::Ver;
-use rule::{fetch_app, UA};
-
-type VerModel = ver::Model;
-static VER_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[.\d]*\d").unwrap());
+use models::VerEntity;
+use rule::{fetch_app, num_version};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -28,20 +21,15 @@ async fn main() -> anyhow::Result<()> {
         // Database::connect("postgres://postgres:postgres@127.0.0.1/postgres").await?;
         // Database::connect("sqlite:///Users/sharp/Downloads/ver_tab.db").await?;
         Database::connect("sqlite:///C:/Users/sharp/AppData/Local/Programs/checkupdate/ver_tab.db").await?;
-    let a = Ver::find_by_id("fzf").one(&db).await?.unwrap();
+    let a = VerEntity::find_by_id("fzf").one(&db).await?.unwrap();
     let aj: serde_json::Value = json!(a);
     println!("{}\n", serde_json::to_string_pretty(&aj)?);
 
-    let mut headers: HeaderMap = HeaderMap::new();
-    headers.insert(USER_AGENT, HeaderValue::from_static(UA));
-    let client: Client = Client::builder().default_headers(headers).build()?;
-
-    let apps: Vec<VerModel> = Ver::find().all(&db).await?;
+    let apps: Vec<ver::Model> = VerEntity::find().all(&db).await?;
     let mut tasks = Vec::new();
     for app in apps {
-        let client: Client = client.clone();
         let db = db.clone();
-        let t = task::spawn(async move { update_app(app, client, db).await });
+        let t = task::spawn(async move { update_app(app, db).await });
         tasks.push(t);
     }
     futures::future::join_all(tasks).await;
@@ -55,8 +43,8 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn update_app(app: ver::Model, client: Client, db: DatabaseConnection) {
-    let new_ver: String = match fetch_app(&app, client).await.map(num_version) {
+async fn update_app(app: ver::Model, db: DatabaseConnection) {
+    let new_ver: String = match fetch_app(&app).await.map(num_version) {
         Ok(s) => s.unwrap(),
         Err(e) => {
             eprintln!("{} 获取版本失败: {}", app.name, e);
@@ -73,11 +61,4 @@ async fn update_app(app: ver::Model, client: Client, db: DatabaseConnection) {
         println!("{} : {} ", app.name, new_ver);
     }
     println!("{}", "=".repeat(36));
-}
-
-fn num_version(ver_info: String) -> Option<String> {
-    VER_RE
-        .captures(ver_info.as_str())?
-        .get(0)
-        .map(|x| x.as_str().to_string())
 }

@@ -1,3 +1,5 @@
-pub use ver::Entity as Ver;
+pub use ver::Entity as VerEntity;
 
 pub mod ver;
+
+pub type VerModel = ver::Model;

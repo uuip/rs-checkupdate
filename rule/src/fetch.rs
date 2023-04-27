@@ -3,16 +3,22 @@ use std::ops::Deref;
 
 use anyhow::{anyhow, Error};
 use once_cell::sync::Lazy;
-use reqwest::{Client, Response};
+use reqwest::{Client, header, Response};
 
 use models::ver;
 
+use crate::FnSignature;
 use crate::rule_index::RULES;
-use crate::{FnSignature, UA};
 
-static TOKEN: Lazy<String> = Lazy::new(|| env::var("GITHUB_TOKEN").unwrap());
+static TOKEN: Lazy<String> = Lazy::new(|| env::var("GITHUB_TOKEN").unwrap_or_default());
+pub const UA: &str =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0";
 
-pub async fn fetch_app(app: &ver::Model, client: Client) -> Result<String, Error> {
+pub async fn fetch_app(app: &ver::Model) -> Result<String, Error> {
+    let mut headers = header::HeaderMap::new();
+    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(UA));
+    let client = Client::builder().default_headers(headers).build()?;
+
     if app.name == *"Fences" {
         let resp: Response = client.head(&app.url).send().await?;
         let head: &str = resp.headers()["Content-Length"].to_str()?;

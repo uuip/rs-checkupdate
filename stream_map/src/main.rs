@@ -5,20 +5,16 @@ use std::sync::Arc;
 
 use futures::{stream, StreamExt};
 use mincolor::*;
-use once_cell::sync::Lazy;
-use regex::Regex;
-use reqwest::{header, Client};
-use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
+use sea_orm::ActiveValue::Set;
 use serde_json::json;
 use tokio::sync::Mutex;
 
 use models::ver;
-use models::Ver;
-use rule::{fetch_app, UA};
+use models::VerEntity;
+use rule::{fetch_app, num_version};
 
 type SharedStatus<'a> = Arc<Mutex<HashMap<&'a str, Vec<&'a str>>>>;
-static VER_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[.\d]*\d").unwrap());
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -34,21 +30,16 @@ async fn main() -> anyhow::Result<()> {
     let db: DatabaseConnection =
         // Database::connect("postgres://postgres:postgres@127.0.0.1/postgres").await?;
         Database::connect("sqlite:///C:/Users/sharp/AppData/Local/Programs/checkupdate/ver_tab.db").await?;
-    let a = Ver::find_by_id("fzf").one(&db).await?.unwrap();
+    let a = VerEntity::find_by_id("fzf").one(&db).await?.unwrap();
     let aj: serde_json::Value = json!(a);
     println!("{}\n", serde_json::to_string_pretty(&aj)?);
 
-    let mut headers = header::HeaderMap::new();
-    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(UA));
-    let client = Client::builder().default_headers(headers).build()?;
-
-    let apps = Ver::find().all(&db).await?;
+    let apps = VerEntity::find().all(&db).await?;
     let tasks = stream::iter(apps)
         .map(|app| {
-            let client = client.clone();
             let db = db.clone();
             let status = status.clone();
-            async move { update_app(app, client, db, status).await }
+            async move { update_app(app, db, status).await }
         })
         .buffer_unordered(64)
         .collect::<Vec<_>>()
@@ -65,13 +56,8 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn update_app(
-    app: ver::Model,
-    client: Client,
-    db: DatabaseConnection,
-    status: SharedStatus<'_>,
-) {
-    let new_ver = fetch_app(&app, client).await.map_or(None, num_version);
+async fn update_app(app: ver::Model, db: DatabaseConnection, status: SharedStatus<'_>) {
+    let new_ver = fetch_app(&app).await.map_or(None, num_version);
     let new_ver = if let Some(s) = new_ver {
         s
     } else {
@@ -97,10 +83,4 @@ async fn update_app(
         println!("{} : {}", app.name.bright_cyan(), new_ver.bright_cyan());
     }
     println!("{}", "=".repeat(36));
-}
-
-fn num_version(ver_info: String) -> Option<String> {
-    VER_RE
-        .find(ver_info.as_str())
-        .map(|x| x.as_str().to_string())
 }

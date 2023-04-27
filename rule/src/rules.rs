@@ -1,9 +1,18 @@
+use once_cell::sync::Lazy;
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
-use select::document::Document;
-use select::predicate::{Attr, Class, Name, Predicate};
 use semver::Version;
 
+static VER_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[.\d]*\d").unwrap());
+
+pub fn num_version(ver_info: String) -> Option<String> {
+    VER_RE
+        .find(ver_info.as_str())
+        .map(|x| x.as_str().to_string())
+}
+/*
+use select::document::Document;
+use select::predicate::{Attr, Class, Name, Predicate};
 pub(crate) fn parse_navicat(resp: &str) -> Option<String> {
     let html = Document::from(resp);
     let element = html
@@ -17,15 +26,16 @@ pub(crate) fn parse_navicat(resp: &str) -> Option<String> {
         .text();
     Some(element)
 }
+*/
 pub(crate) fn parse_beyond_compare(resp: &str) -> Option<String> {
-    let html = Document::from(resp);
+    let html = Html::parse_document(resp);
+    let selector = Selector::parse("p").unwrap();
     let re = Regex::new("Current Version.+").unwrap();
 
     let element = html
-        .find(Name("p"))
-        .find(|x| re.is_match(x.text().as_str()))?
-        .text();
-    Some(element)
+        .select(&selector)
+        .find_map(|x| re.find(x.text().next().unwrap_or_default()))?;
+    Some(element.as_str().to_owned())
 }
 pub(crate) fn parse_faststone(resp: &str) -> Option<String> {
     let html = Html::parse_document(resp);
@@ -113,6 +123,12 @@ pub(crate) fn parse_everything(resp: &str) -> Option<String> {
 pub(crate) fn parse_navicat_mac(resp: &str) -> Option<String> {
     let html = Html::parse_document(resp);
     let selector = Selector::parse(r#".release-notes-table[platform="M"] td>.note-title"#).unwrap();
+    let element = html.select(&selector).next()?.text().next()?;
+    Some(element.to_owned())
+}
+pub(crate) fn parse_navicat(resp: &str) -> Option<String> {
+    let html = Html::parse_document(resp);
+    let selector = Selector::parse(r#".release-notes-table[platform="W"] td>.note-title"#).unwrap();
     let element = html.select(&selector).next()?.text().next()?;
     Some(element.to_owned())
 }

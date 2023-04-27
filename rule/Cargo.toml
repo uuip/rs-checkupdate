@@ -11,5 +11,4 @@ anyhow = "^1"
 once_cell = "^1"
 scraper = "*"
 semver = "^1"
-select = "^0"
 models = { path = "../models" }
