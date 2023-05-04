@@ -7,14 +7,14 @@ use reqwest::{Client, header, Response};
 
 use models::ver;
 
-use crate::FnSignature;
-use crate::rule_index::RULES;
+use crate::rule_index::{CSSRULES, FNRULES};
+use crate::rules::parse_css;
 
 static TOKEN: Lazy<String> = Lazy::new(|| env::var("GITHUB_TOKEN").unwrap_or_default());
 pub const UA: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0";
 
-pub async fn fetch_app(app: &ver::Model) -> Result<String, Error> {
+pub async fn parse_app(app: &ver::Model) -> Result<String, Error> {
     let mut headers = header::HeaderMap::new();
     headers.insert(header::USER_AGENT, header::HeaderValue::from_static(UA));
     let client = Client::builder().default_headers(headers).build()?;
@@ -31,9 +31,8 @@ pub async fn fetch_app(app: &ver::Model) -> Result<String, Error> {
             .get(&app.url)
             .send()
             .await?;
-        let func: &FnSignature = RULES.get(app.name.as_str()).unwrap();
         let arg: &str = resp.headers()["location"].to_str()?;
-        func(arg).ok_or(anyhow!("解析版本错误"))
+        find_version(app, arg).ok_or(anyhow!("解析版本错误"))
     } else if app.json == 1 {
         let resp: Response = {
             if app.url.starts_with("https://api.github.com") {
@@ -55,8 +54,17 @@ pub async fn fetch_app(app: &ver::Model) -> Result<String, Error> {
         Ok(v)
     } else {
         let resp: Response = client.get(&app.url).send().await?;
-        let func: &FnSignature = RULES.get(app.name.as_str()).unwrap();
         let arg: String = resp.text().await?;
-        func(&arg).ok_or(anyhow!("解析版本错误"))
+        find_version(app, &arg).ok_or(anyhow!("解析版本错误"))
+    }
+}
+
+fn find_version(app: &ver::Model, resp: &str) -> Option<String> {
+    let app_name = app.name.as_str();
+    let func = FNRULES.get(app_name);
+    if let Some(f) = func {
+        f(resp)
+    } else {
+        CSSRULES.get(app_name).map(|css| parse_css(resp, css))?
     }
 }

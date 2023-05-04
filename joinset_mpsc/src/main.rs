@@ -1,5 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
+use std::collections::HashMap;
+
 use mincolor::*;
 use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
 use sea_orm::ActiveValue::Set;
@@ -9,19 +11,22 @@ use tokio::task::JoinSet;
 
 use models::ver;
 use models::VerEntity;
-use rule::{fetch_app, num_version};
+use rule::{num_version, parse_app};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    if cfg!(target_os = "windows") {
+    let opt: &str = if cfg!(target_os = "windows") {
         let _ = enable_ansi_support::enable_ansi_support();
-    }
+        //"postgres://postgres:postgres@127.0.0.1/postgres"
+        "sqlite:///C:/Users/sharp/AppData/Local/Programs/checkupdate/ver_tab.db"
+    } else {
+        "sqlite:///Users/sharp/Downloads/ver_tab.db"
+    };
     let now = std::time::SystemTime::now();
+    let mut status: HashMap<&str, Vec<&str>> =
+        HashMap::from([("success", Vec::new()), ("failed", Vec::new())]);
 
-    let db: DatabaseConnection =
-        // Database::connect("postgres://postgres:postgres@127.0.0.1/postgres").await?;
-        // Database::connect("sqlite:///Users/sharp/Downloads/ver_tab.db").await?;
-        Database::connect("sqlite:///C:/Users/sharp/AppData/Local/Programs/checkupdate/ver_tab.db").await?;
+    let db: DatabaseConnection = Database::connect(opt).await?;
     let apps: Vec<ver::Model> = VerEntity::find().all(&db).await?;
     let a = VerEntity::find_by_id("fzf").one(&db).await?.unwrap();
     let aj: serde_json::Value = json!(a);
@@ -34,14 +39,7 @@ async fn main() -> anyhow::Result<()> {
         let msg: String = format!("{} 提取版本号失败", app.name);
         let tx = tx.clone();
         set.spawn(async move {
-            let new_ver = match fetch_app(&app).await.map(num_version) {
-                Ok(s) => s.unwrap(),
-                Err(e) => {
-                    eprintln!("{} 获取版本失败: {}", app.name, e);
-                    println!("{}", "=".repeat(36));
-                    return;
-                }
-            };
+            let new_ver = parse_app(&app).await.map_or(None, num_version);
             let _ = tx.send((app, new_ver)).await;
         });
     }
@@ -49,11 +47,16 @@ async fn main() -> anyhow::Result<()> {
     drop(tx);
 
     while let Some(i) = rx.recv().await {
-        let (app, new_ver): (ver::Model, String) = i;
-        update_app(&db, app, new_ver).await;
+        let (app, new_ver): (ver::Model, Option<String>) = i;
+        update_app(app, &db, new_ver, &mut status).await;
     }
 
     println!("用时{:.2?}秒", now.elapsed()?.as_secs_f32());
+    println!(
+        "成功: {:?}\n失败: {:?}",
+        status.get("success").unwrap().join(", "),
+        status.get("failed").unwrap().join(", ")
+    );
     if cfg!(target_os = "windows") & !cfg!(debug_assertions) {
         let _ = std::process::Command::new("cmd.exe")
             .arg("/c")
@@ -63,14 +66,33 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn update_app(db: &DatabaseConnection, app: ver::Model, new_ver: String) {
-    if new_ver != app.ver {
-        println!("{} 更新为版本 {}", app.name.green(), new_ver.bright_green());
-        let mut app: ver::ActiveModel = app.into();
-        app.ver = Set(new_ver);
-        let _ = app.update(db).await;
+async fn update_app(
+    app: ver::Model,
+    db: &DatabaseConnection,
+    new_ver: Option<String>,
+    status: &mut HashMap<&str, Vec<&str>>,
+) {
+    let new_ver = if let Some(s) = new_ver {
+        s
     } else {
-        println!("{} : {} ", app.name, new_ver);
+        eprintln!("{} 获取版本失败\n{}", app.name, "=".repeat(36));
+        status
+            .get_mut("failed")
+            .unwrap()
+            .push(Box::leak(app.name.into_boxed_str()));
+        return;
+    };
+    if new_ver != app.ver {
+        let mut app: ver::ActiveModel = app.into();
+        app.ver = Set(new_ver.to_owned());
+        let app = app.update(db).await.unwrap();
+        println!("{} 更新为版本 {}", app.name.green(), new_ver.bright_green());
+        status
+            .get_mut("success")
+            .unwrap()
+            .push(Box::leak(app.name.into_boxed_str()));
+    } else {
+        println!("{} : {}", app.name.bright_cyan(), new_ver.bright_cyan());
     }
     println!("{}", "=".repeat(36));
 }
