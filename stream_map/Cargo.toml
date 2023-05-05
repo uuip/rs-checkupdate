@@ -6,19 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sea-orm = { version = "^0", features = [
+sea-orm = { version = "0", features = [
     "sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls", "macros"
 ] }
 serde_json = "*"
 
-reqwest = { version = "^0", features = ["blocking", "json"] }
-tokio = { version = "^1", features = ["full"] }
-futures = "^0"
+tokio = { version = "1", features = ["full"] }
+futures = "0"
 
-enable-ansi-support = "^0"
-mincolor = "^2"
+enable-ansi-support = "0"
+mincolor = "2"
 
-anyhow = "^1"
+anyhow = "1"
 
 rule = { path = "../rule" }
 models = { path = "../models" }

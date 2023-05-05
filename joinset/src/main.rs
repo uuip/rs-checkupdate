@@ -60,6 +60,7 @@ async fn main() -> anyhow::Result<()> {
     }
     Ok(())
 }
+
 async fn update_app(app: ver::Model, db: DatabaseConnection, status: SharedStatus<'static>) {
     let new_ver = parse_app(&app).await.map_or(None, num_version);
     let new_ver = if let Some(s) = new_ver {

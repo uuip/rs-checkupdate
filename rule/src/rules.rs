@@ -37,6 +37,7 @@ pub(crate) fn parse_beyond_compare(resp: &str) -> Option<String> {
         .find_map(|x| re.find(x.text().next().unwrap_or_default()))?;
     Some(element.as_str().to_owned())
 }
+
 pub(crate) fn parse_faststone(resp: &str) -> Option<String> {
     let html = Html::parse_document(resp);
     let selector = Selector::parse("b").unwrap();
@@ -47,6 +48,7 @@ pub(crate) fn parse_faststone(resp: &str) -> Option<String> {
         .find_map(|x| re.find(x.text().next().unwrap_or_default()))?;
     Some(element.as_str().to_owned())
 }
+
 pub(crate) fn parse_winrar(resp: &str) -> Option<String> {
     let html = Html::parse_document(resp);
     let selector = Selector::parse("b").unwrap();
@@ -57,6 +59,7 @@ pub(crate) fn parse_winrar(resp: &str) -> Option<String> {
         .find_map(|x| re.find(x.text().next().unwrap_or_default()))?;
     Some(element.as_str().to_owned())
 }
+
 pub(crate) fn parse_vmware(resp: &str) -> Option<String> {
     let html = Html::parse_fragment(resp);
     let selector = Selector::parse("metadata>version").unwrap();
@@ -68,6 +71,7 @@ pub(crate) fn parse_vmware(resp: &str) -> Option<String> {
     let ver = element.last()?;
     Some(ver.to_string())
 }
+
 pub(crate) fn parse_dev_man_view(resp: &str) -> Option<String> {
     let html = Html::parse_document(resp);
     let selector = Selector::parse("h4").unwrap();
