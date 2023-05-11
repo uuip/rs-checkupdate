@@ -27,17 +27,6 @@ pub(crate) fn parse_css(resp: &str, css: &str) -> Option<String> {
     Some(element.to_owned())
 }
 
-pub(crate) fn parse_beyond_compare(resp: &str) -> Option<String> {
-    let html = Html::parse_document(resp);
-    let selector = Selector::parse("p").unwrap();
-    let re = Regex::new("Current Version.+").unwrap();
-
-    let element = html
-        .select(&selector)
-        .find_map(|x| re.find(x.text().next().unwrap_or_default()))?;
-    Some(element.as_str().to_owned())
-}
-
 pub(crate) fn parse_faststone(resp: &str) -> Option<String> {
     let html = Html::parse_document(resp);
     let selector = Selector::parse("b").unwrap();

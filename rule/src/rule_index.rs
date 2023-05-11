@@ -6,8 +6,7 @@ use crate::FnSignature;
 use crate::rules;
 
 pub static FNRULES: Lazy<HashMap<&'static str, FnSignature>> = Lazy::new(|| {
-    let mapper: [(&str, FnSignature); 7] = [
-        ("Beyond Compare", rules::parse_beyond_compare),
+    let mapper: [(&str, FnSignature); 6] = [
         ("DevManView", rules::parse_dev_man_view),
         ("EmEditor", rules::parse_emeditor),
         ("FS Capture", rules::parse_faststone),
@@ -19,7 +18,7 @@ pub static FNRULES: Lazy<HashMap<&'static str, FnSignature>> = Lazy::new(|| {
 });
 
 pub static CSSRULES: Lazy<HashMap<&'static str, &str>> = Lazy::new(|| {
-    let mapper: [(&str, &str); 13] = [
+    let mapper: [(&str, &str); 14] = [
         ("PDF-XChange", "#bh-history>li:first-of-type>a"),
         ("SecureCRT", "#download-tabs>h4"),
         ("Registry Workshop", "p"),
@@ -39,6 +38,7 @@ pub static CSSRULES: Lazy<HashMap<&'static str, &str>> = Lazy::new(|| {
         ("WGestures 2 [Mac]", "a#download:nth-of-type(2)"),
         ("Git", ".version"),
         ("AIDA64", "td.version"),
+        ("Beyond Compare", ".hasicon"),
     ];
     HashMap::from(mapper)
 });
