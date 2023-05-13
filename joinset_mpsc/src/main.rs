@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 
 use mincolor::*;
-use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
 use sea_orm::ActiveValue::Set;
+use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
 use serde_json::json;
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;

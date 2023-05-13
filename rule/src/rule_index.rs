@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use once_cell::sync::Lazy;
 
-use crate::FnSignature;
 use crate::rules;
+use crate::FnSignature;
 
 pub static FNRULES: Lazy<HashMap<&'static str, FnSignature>> = Lazy::new(|| {
     let mapper: [(&str, FnSignature); 6] = [
