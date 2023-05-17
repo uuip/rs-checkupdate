@@ -38,7 +38,7 @@ pub static CSSRULES: Lazy<HashMap<&'static str, &str>> = Lazy::new(|| {
         ("WGestures 2 [Mac]", "a#download:nth-of-type(2)"),
         ("Git", ".version"),
         ("AIDA64", "td.version"),
-        ("Beyond Compare", ".hasicon"),
+        ("Beyond Compare", "div#content h2"),
     ];
     HashMap::from(mapper)
 });
