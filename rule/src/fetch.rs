@@ -3,7 +3,8 @@ use std::ops::Deref;
 
 use anyhow::{anyhow, Error};
 use once_cell::sync::Lazy;
-use reqwest::{header, Client, Response};
+use reqwest::{Client, header, Response};
+use reqwest::header::HeaderMap;
 
 use models::ver;
 
@@ -11,16 +12,16 @@ use crate::rule_index::{CSSRULES, FNRULES};
 use crate::rules::parse_css;
 
 static TOKEN: Lazy<String> = Lazy::new(|| env::var("GITHUB_TOKEN").unwrap_or_default());
-pub const UA: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0";
+const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0";
+static CLIENT: Lazy<Client> = Lazy::new(|| {
+    let mut headers: HeaderMap = HeaderMap::new();
+    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(UA));
+    Client::builder().default_headers(headers).build().unwrap()
+});
 
 pub async fn parse_app(app: &ver::Model) -> Result<String, Error> {
-    let mut headers = header::HeaderMap::new();
-    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(UA));
-    let client = Client::builder().default_headers(headers).build()?;
-
     if app.name == *"Fences" {
-        let resp: Response = client.head(&app.url).send().await?;
+        let resp: Response = CLIENT.head(&app.url).send().await?;
         let head: &str = resp.headers()["Content-Length"].to_str()?;
         Ok(head.to_owned())
     } else if app.name == *"EmEditor" {
@@ -36,13 +37,13 @@ pub async fn parse_app(app: &ver::Model) -> Result<String, Error> {
     } else if app.json == 1 {
         let resp: Response = {
             if app.url.starts_with("https://api.github.com") {
-                client
+                CLIENT
                     .get(&app.url)
                     .header("Authorization", format!("token {}", TOKEN.deref()))
                     .send()
                     .await?
             } else {
-                client.get(&app.url).send().await?
+                CLIENT.get(&app.url).send().await?
             }
         };
         let j: serde_json::Value = resp.json::<serde_json::Value>().await?;
@@ -53,7 +54,7 @@ pub async fn parse_app(app: &ver::Model) -> Result<String, Error> {
         };
         Ok(v)
     } else {
-        let resp: Response = client.get(&app.url).send().await?;
+        let resp: Response = CLIENT.get(&app.url).send().await?;
         let arg: String = resp.text().await?;
         find_version(app, &arg).ok_or(anyhow!("解析版本错误"))
     }
