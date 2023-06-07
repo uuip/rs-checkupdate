@@ -3,8 +3,8 @@ use std::ops::Deref;
 
 use anyhow::{anyhow, Error};
 use once_cell::sync::Lazy;
-use reqwest::{Client, header, Response};
 use reqwest::header::HeaderMap;
+use reqwest::{header, Client, Response};
 
 use models::ver;
 

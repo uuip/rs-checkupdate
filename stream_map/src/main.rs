@@ -71,10 +71,13 @@ async fn main() -> anyhow::Result<()> {
 //     }
 // };
 async fn update_app(app: ver::Model, db: DatabaseConnection, status: SharedStatus<'_>) {
-    let new_ver = parse_app(&app).await.map_or_else(|e| {
-        eprintln!("{:?}",e.to_string());
-        None
-    }, num_version);
+    let new_ver = parse_app(&app).await.map_or_else(
+        |e| {
+            eprintln!("{:?}", e.to_string());
+            None
+        },
+        num_version,
+    );
     let new_ver = if let Some(s) = new_ver {
         s
     } else {
