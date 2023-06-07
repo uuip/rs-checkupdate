@@ -32,7 +32,7 @@ pub static CSSRULES: Lazy<HashMap<&'static str, &str>> = Lazy::new(|| {
             r#".release-notes-table[platform="W"] td>.note-title"#,
         ),
         ("Everything", "h2"),
-        ("Python", "p.download-buttons>a"),
+        ("Python", ".download-widget a"),
         ("Contexts [Mac]", ".section--history__item__header>h1"),
         ("WGestures 2", "a#download:nth-of-type(1)"),
         ("WGestures 2 [Mac]", "a#download:nth-of-type(2)"),
