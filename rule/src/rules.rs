@@ -75,3 +75,10 @@ pub(crate) fn parse_dev_man_view(resp: &str) -> Option<String> {
 pub(crate) fn parse_emeditor(resp: &str) -> Option<String> {
     Some(resp.split('_').last()?.to_owned())
 }
+
+pub(crate) fn parse_pdf_xchange(resp: &str) -> Option<String> {
+    let html = Html::parse_document(resp);
+    let selector = Selector::parse("div.version").unwrap();
+    let element = html.select(&selector).next()?.text().nth(2)?.trim();
+    Some(element.to_owned())
+}

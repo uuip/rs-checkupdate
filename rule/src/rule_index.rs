@@ -6,20 +6,20 @@ use crate::rules;
 use crate::FnSignature;
 
 pub static FNRULES: Lazy<HashMap<&'static str, FnSignature>> = Lazy::new(|| {
-    let mapper: [(&str, FnSignature); 6] = [
+    let mapper: [(&str, FnSignature); 7] = [
         ("DevManView", rules::parse_dev_man_view),
         ("EmEditor", rules::parse_emeditor),
         ("FS Capture", rules::parse_faststone),
         ("FS Viewer", rules::parse_faststone),
         ("VMware", rules::parse_vmware),
         ("WinRAR", rules::parse_winrar),
+        ("PDF-XChange", rules::parse_pdf_xchange),
     ];
     HashMap::from(mapper)
 });
 
 pub static CSSRULES: Lazy<HashMap<&'static str, &str>> = Lazy::new(|| {
-    let mapper: [(&str, &str); 14] = [
-        ("PDF-XChange", "#bh-history>li:first-of-type>a"),
+    let mapper: [(&str, &str); 13] = [
         ("SecureCRT", "#download-tabs>h4"),
         ("Registry Workshop", "p"),
         ("Firefox", ".c-release-version"),
