@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
         status.get("success").unwrap().join(", "),
         status.get("failed").unwrap().join(", ")
     );
-    if cfg!(target_os = "windows") & !cfg!(debug_assertions) {
+    if cfg!(windows) & !cfg!(debug_assertions) {
         let _ = std::process::Command::new("cmd.exe")
             .arg("/c")
             .arg("pause")
