@@ -5,8 +5,8 @@ use std::sync::{Arc, Mutex};
 
 use futures::{stream, StreamExt};
 use mincolor::*;
-use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait};
+use sea_orm::ActiveValue::Set;
 use serde_json::json;
 
 use models::ver;
@@ -17,7 +17,7 @@ type SharedStatus<'a> = Arc<Mutex<HashMap<&'a str, Vec<&'a str>>>>;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let opt: &str = if cfg!(target_os = "windows") {
+    let opt: &str = if cfg!(windows) {
         let _ = enable_ansi_support::enable_ansi_support();
         //"postgres://postgres:postgres@127.0.0.1/postgres"
         "sqlite:///C:/Users/sharp/AppData/Local/Programs/checkupdate/ver_tab.db"
